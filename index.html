@@ -2911,91 +2911,112 @@
     // ==================== 拖拽功能 ====================
     // 使用事件委托优化拖拽事件处理
     function setupDragHandlers() {
-      const seatingChartEl = document.getElementById('seatingChart');
-      
-      seatingChartEl.addEventListener('dragstart', (e) => {
-        const seat = e.target.closest('.seat');
-        if (!seat) return;
+      try {
+        const seatingChartEl = document.getElementById('seatingChart');
+        if (!seatingChartEl) return;
         
-        const row = parseInt(seat.dataset.row);
-        const col = parseInt(seat.dataset.col);
-        const student = seatingChart[row][col];
-        
-        if (!student || student.isPlatform || isSeatLocked(row, col)) {
-          e.preventDefault();
-          return;
-        }
-        
-        draggedSeat = { row, col, student };
-        isDragging = true;
-        seat.classList.add('seat-dragging');
-        
-        e.dataTransfer.setData('text/plain', JSON.stringify({ row, col }));
-        e.dataTransfer.effectAllowed = 'move';
-      });
-
-      seatingChartEl.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        
-        if (!isDragging) return;
-        
-        const seat = e.target.closest('.seat');
-        if (!seat) return;
-        
-        const row = parseInt(seat.dataset.row);
-        const col = parseInt(seat.dataset.col);
-        const targetStudent = seatingChart[row][col];
-        
-        if (targetStudent && (targetStudent.isPlatform || targetStudent.isLeaveSeat || isSeatLocked(row, col))) {
-          e.dataTransfer.dropEffect = 'none';
-          return;
-        }
-        
-        e.dataTransfer.dropEffect = 'move';
-        seat.classList.add('seat-drop-zone');
-      });
-
-      seatingChartEl.addEventListener('drop', (e) => {
-        e.preventDefault();
-        
-        const seat = e.target.closest('.seat');
-        if (!seat) return;
-        
-        seat.classList.remove('seat-drop-zone');
-        
-        if (!isDragging || !draggedSeat) return;
-        
-        const targetRow = parseInt(seat.dataset.row);
-        const targetCol = parseInt(seat.dataset.col);
-        const targetStudent = seatingChart[targetRow][targetCol];
-        
-        if (targetStudent && (targetStudent.isPlatform || targetStudent.isLeaveSeat || isSeatLocked(targetRow, targetCol))) {
-          showToast('不能将学生放置在此处', 'warning');
-          return;
-        }
-        
-        // 交换学生位置
-        seatingChart[draggedSeat.row][draggedSeat.col] = targetStudent;
-        seatingChart[targetRow][targetCol] = draggedSeat.student;
-        
-        historyManager.push(seatingChart);
-        renderSeatingChart();
-        
-        isDragging = false;
-        draggedSeat = null;
-      });
-
-      seatingChartEl.addEventListener('dragend', (e) => {
-        const seat = e.target.closest('.seat');
-        if (seat) {
-          seat.classList.remove('seat-dragging');
-        }
-        document.querySelectorAll('.seat-drop-zone').forEach(s => {
-          s.classList.remove('seat-drop-zone');
+        seatingChartEl.addEventListener('dragstart', (e) => {
+          try {
+            const seat = e.target.closest('.seat');
+            if (!seat) return;
+            
+            const row = parseInt(seat.dataset.row);
+            const col = parseInt(seat.dataset.col);
+            const student = seatingChart[row][col];
+            
+            if (!student || student.isPlatform || isSeatLocked(row, col)) {
+              e.preventDefault();
+              return;
+            }
+            
+            draggedSeat = { row, col, student };
+            isDragging = true;
+            seat.classList.add('seat-dragging');
+            
+            e.dataTransfer.setData('text/plain', JSON.stringify({ row, col }));
+            e.dataTransfer.effectAllowed = 'move';
+          } catch (error) {
+            console.error('拖拽开始错误:', error);
+          }
         });
-        isDragging = false;
-        draggedSeat = null;
-      });
+
+        seatingChartEl.addEventListener('dragover', (e) => {
+          try {
+            e.preventDefault();
+            
+            if (!isDragging) return;
+            
+            const seat = e.target.closest('.seat');
+            if (!seat) return;
+            
+            const row = parseInt(seat.dataset.row);
+            const col = parseInt(seat.dataset.col);
+            const targetStudent = seatingChart[row][col];
+            
+            if (targetStudent && (targetStudent.isPlatform || targetStudent.isLeaveSeat || isSeatLocked(row, col))) {
+              e.dataTransfer.dropEffect = 'none';
+              return;
+            }
+            
+            e.dataTransfer.dropEffect = 'move';
+            seat.classList.add('seat-drop-zone');
+          } catch (error) {
+            console.error('拖拽经过错误:', error);
+          }
+        });
+
+        seatingChartEl.addEventListener('drop', (e) => {
+          try {
+            e.preventDefault();
+            
+            const seat = e.target.closest('.seat');
+            if (!seat) return;
+            
+            seat.classList.remove('seat-drop-zone');
+            
+            if (!isDragging || !draggedSeat) return;
+            
+            const targetRow = parseInt(seat.dataset.row);
+            const targetCol = parseInt(seat.dataset.col);
+            const targetStudent = seatingChart[targetRow][targetCol];
+            
+            if (targetStudent && (targetStudent.isPlatform || targetStudent.isLeaveSeat || isSeatLocked(targetRow, targetCol))) {
+              showToast('不能将学生放置在此处', 'warning');
+              return;
+            }
+            
+            // 交换学生位置
+            seatingChart[draggedSeat.row][draggedSeat.col] = targetStudent;
+            seatingChart[targetRow][targetCol] = draggedSeat.student;
+            
+            historyManager.push(seatingChart);
+            renderSeatingChart();
+            
+            isDragging = false;
+            draggedSeat = null;
+          } catch (error) {
+            console.error('拖拽放置错误:', error);
+          }
+        });
+
+        seatingChartEl.addEventListener('dragend', (e) => {
+          try {
+            const seat = e.target.closest('.seat');
+            if (seat) {
+              seat.classList.remove('seat-dragging');
+            }
+            document.querySelectorAll('.seat-drop-zone').forEach(s => {
+              s.classList.remove('seat-drop-zone');
+            });
+            isDragging = false;
+            draggedSeat = null;
+          } catch (error) {
+            console.error('拖拽结束错误:', error);
+          }
+        });
+      } catch (error) {
+        console.error('设置拖拽处理器错误:', error);
+      }
     }
 
     // ==================== 撤销/重做 ====================
