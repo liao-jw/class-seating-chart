@@ -1691,8 +1691,12 @@
 
         setTimeout(() => {
           try {
+            console.log('开始生成座位表...');
+            console.log('参数:', { rows, cols, seatRule, studentsCount: students.length });
+            
             // 先创建包含讲台行的完整座位表结构
             let tempChart = Array(rows + 1).fill().map(() => Array(cols).fill(null));
+            console.log('创建座位表结构成功');
             
             // 设置讲台行
             const platformRowIndex = rows; // 讲台行在最后
@@ -1705,14 +1709,17 @@
                 isPlatform: true
               };
             }
+            console.log('设置讲台行成功');
             
             // 准备学生数据
             let studentsToAssign = [...students];
+            console.log('学生数据准备成功:', studentsToAssign.length, '名学生');
             
             // 计算实际可分配的座位数（包含讲台行的空座位）
             const regularSeats = rows * cols;
             const platformRowEmptySeats = cols - platformWidth;
             const availableSeats = regularSeats + platformRowEmptySeats;
+            console.log('可用座位数:', availableSeats);
             
             // 限制学生数量不超过可用座位数
             if (studentsToAssign.length > availableSeats) {
@@ -1721,44 +1728,78 @@
             }
             
             // 根据排座规则分配学生
+            console.log('开始分配学生，规则:', seatRule);
             switch (seatRule) {
               case 'random':
+                console.log('执行随机排座');
                 studentsToAssign = shuffleArray([...studentsToAssign]);
                 assignStudentsToChart(studentsToAssign, tempChart, rows, cols, platformRowIndex, platformWidth, startCol);
+                console.log('随机排座完成');
                 break;
                 
               case 'height':
+                console.log('执行身高排序');
                 studentsToAssign.sort((a, b) => (a.height || 170) - (b.height || 170));
                 assignStudentsToChart(studentsToAssign, tempChart, rows, cols, platformRowIndex, platformWidth, startCol);
+                console.log('身高排序完成');
                 break;
                 
               case 'score':
+                console.log('执行成绩均衡分配');
                 balancedScoreSeatingWithPlatform(studentsToAssign, tempChart, rows, cols, platformRowIndex, platformWidth, startCol);
+                console.log('成绩均衡分配完成');
                 break;
                 
               case 'gender':
+                console.log('执行性别穿插排列');
                 genderInterleaveSeatingWithPlatform(studentsToAssign, tempChart, rows, cols, platformRowIndex, platformWidth, startCol);
+                console.log('性别穿插排列完成');
                 break;
                 
               case 'multiFactor':
-                const weights = {
-                  heightWeight: parseInt(document.getElementById('weightHeight').value) / 100,
-                  visionWeight: parseInt(document.getElementById('weightVision').value) / 100,
-                  scoreWeight: parseInt(document.getElementById('weightScore').value) / 100,
-                  genderWeight: parseInt(document.getElementById('weightGender').value) / 100
-                };
-                multiFactorSeatingWithPlatform(studentsToAssign, tempChart, rows, cols, weights, platformRowIndex, platformWidth, startCol);
+                console.log('执行多因素智能排座');
+                try {
+                  const heightSlider = document.getElementById('weightHeight');
+                  const visionSlider = document.getElementById('weightVision');
+                  const scoreSlider = document.getElementById('weightScore');
+                  const genderSlider = document.getElementById('weightGender');
+                  
+                  console.log('权重滑块元素:', {
+                    heightSlider: !!heightSlider,
+                    visionSlider: !!visionSlider,
+                    scoreSlider: !!scoreSlider,
+                    genderSlider: !!genderSlider
+                  });
+                  
+                  const weights = {
+                    heightWeight: heightSlider ? parseInt(heightSlider.value) / 100 : 0.3,
+                    visionWeight: visionSlider ? parseInt(visionSlider.value) / 100 : 0.3,
+                    scoreWeight: scoreSlider ? parseInt(scoreSlider.value) / 100 : 0.2,
+                    genderWeight: genderSlider ? parseInt(genderSlider.value) / 100 : 0.2
+                  };
+                  
+                  console.log('权重设置:', weights);
+                  multiFactorSeatingWithPlatform(studentsToAssign, tempChart, rows, cols, weights, platformRowIndex, platformWidth, startCol);
+                  console.log('多因素智能排座完成');
+                } catch (multiError) {
+                  console.error('多因素排座错误:', multiError);
+                  throw multiError;
+                }
                 break;
             }
             
             // 设置最终座位表
             seatingChart = tempChart;
+            console.log('座位表设置完成');
             
             // 添加到历史记录
             historyManager.push(seatingChart);
+            console.log('添加到历史记录完成');
             
             // 更新座位表显示
+            console.log('开始渲染座位表');
             renderSeatingChart();
+            console.log('渲染座位表完成');
             
             // 检查约束冲突
             const violations = checkConstraintViolations();
@@ -1769,8 +1810,10 @@
             }
             
             hideLoading();
+            console.log('生成座位表完成');
           } catch (error) {
             console.error('生成座位表异步错误:', error);
+            console.error('错误堆栈:', error.stack);
             hideLoading();
             showToast('生成座位表失败，请重试', 'error');
           }
