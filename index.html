@@ -1676,98 +1676,110 @@
 
     // ==================== 生成座位表 ====================
     function generateSeatingChart() {
-      if (students.length === 0) {
-        showToast('请先上传学生名单', 'error');
-        return;
-      }
+      try {
+        if (students.length === 0) {
+          showToast('请先上传学生名单', 'error');
+          return;
+        }
 
-      const rows = parseInt(rowCount.value);
-      const cols = parseInt(colCount.value);
-      const hasPlatform = true; // 默认显示讲台
-      const seatRule = document.querySelector('input[name="seatRule"]:checked').value;
+        const rows = parseInt(rowCount.value);
+        const cols = parseInt(colCount.value);
+        const hasPlatform = true; // 默认显示讲台
+        const seatRule = document.querySelector('input[name="seatRule"]:checked').value;
 
-      showLoading('正在生成座位表...');
+        showLoading('正在生成座位表...');
 
-      setTimeout(() => {
-        // 先创建包含讲台行的完整座位表结构
-        let tempChart = Array(rows + 1).fill().map(() => Array(cols).fill(null));
-        
-        // 设置讲台行
-        const platformRowIndex = rows; // 讲台行在最后
-        const platformWidth = cols % 2 === 0 ? 2 : 1;
-        const startCol = Math.floor((cols - 1) / 2);
-        for (let j = startCol; j < startCol + platformWidth; j++) {
-          tempChart[platformRowIndex][j] = {
-            id: -1,
-            name: '讲台',
-            isPlatform: true
-          };
-        }
-        
-        // 准备学生数据
-        let studentsToAssign = [...students];
-        
-        // 计算实际可分配的座位数（包含讲台行的空座位）
-        const regularSeats = rows * cols;
-        const platformRowEmptySeats = cols - platformWidth;
-        const availableSeats = regularSeats + platformRowEmptySeats;
-        
-        // 限制学生数量不超过可用座位数
-        if (studentsToAssign.length > availableSeats) {
-          studentsToAssign = studentsToAssign.slice(0, availableSeats);
-          showToast(`学生数量超过可用座位数（含讲台行空位），只分配前 ${availableSeats} 名学生`, 'warning');
-        }
-        
-        // 根据排座规则分配学生
-        switch (seatRule) {
-          case 'random':
-            studentsToAssign = shuffleArray([...studentsToAssign]);
-            assignStudentsToChart(studentsToAssign, tempChart, rows, cols, platformRowIndex, platformWidth, startCol);
-            break;
+        setTimeout(() => {
+          try {
+            // 先创建包含讲台行的完整座位表结构
+            let tempChart = Array(rows + 1).fill().map(() => Array(cols).fill(null));
             
-          case 'height':
-            studentsToAssign.sort((a, b) => (a.height || 170) - (b.height || 170));
-            assignStudentsToChart(studentsToAssign, tempChart, rows, cols, platformRowIndex, platformWidth, startCol);
-            break;
+            // 设置讲台行
+            const platformRowIndex = rows; // 讲台行在最后
+            const platformWidth = cols % 2 === 0 ? 2 : 1;
+            const startCol = Math.floor((cols - 1) / 2);
+            for (let j = startCol; j < startCol + platformWidth; j++) {
+              tempChart[platformRowIndex][j] = {
+                id: -1,
+                name: '讲台',
+                isPlatform: true
+              };
+            }
             
-          case 'score':
-            balancedScoreSeatingWithPlatform(studentsToAssign, tempChart, rows, cols, platformRowIndex, platformWidth, startCol);
-            break;
+            // 准备学生数据
+            let studentsToAssign = [...students];
             
-          case 'gender':
-            genderInterleaveSeatingWithPlatform(studentsToAssign, tempChart, rows, cols, platformRowIndex, platformWidth, startCol);
-            break;
+            // 计算实际可分配的座位数（包含讲台行的空座位）
+            const regularSeats = rows * cols;
+            const platformRowEmptySeats = cols - platformWidth;
+            const availableSeats = regularSeats + platformRowEmptySeats;
             
-          case 'multiFactor':
-            const weights = {
-              heightWeight: parseInt(document.getElementById('weightHeight').value) / 100,
-              visionWeight: parseInt(document.getElementById('weightVision').value) / 100,
-              scoreWeight: parseInt(document.getElementById('weightScore').value) / 100,
-              genderWeight: parseInt(document.getElementById('weightGender').value) / 100
-            };
-            multiFactorSeatingWithPlatform(studentsToAssign, tempChart, rows, cols, weights, platformRowIndex, platformWidth, startCol);
-            break;
-        }
-        
-        // 设置最终座位表
-        seatingChart = tempChart;
-        
-        // 添加到历史记录
-        historyManager.push(seatingChart);
-        
-        // 更新座位表显示
-        renderSeatingChart();
-        
-        // 检查约束冲突
-        const violations = checkConstraintViolations();
-        if (violations.length > 0) {
-          showToast(`生成完成，发现 ${violations.length} 个约束冲突`, 'warning');
-        } else {
-          showToast('座位表生成成功', 'success');
-        }
-        
+            // 限制学生数量不超过可用座位数
+            if (studentsToAssign.length > availableSeats) {
+              studentsToAssign = studentsToAssign.slice(0, availableSeats);
+              showToast(`学生数量超过可用座位数（含讲台行空位），只分配前 ${availableSeats} 名学生`, 'warning');
+            }
+            
+            // 根据排座规则分配学生
+            switch (seatRule) {
+              case 'random':
+                studentsToAssign = shuffleArray([...studentsToAssign]);
+                assignStudentsToChart(studentsToAssign, tempChart, rows, cols, platformRowIndex, platformWidth, startCol);
+                break;
+                
+              case 'height':
+                studentsToAssign.sort((a, b) => (a.height || 170) - (b.height || 170));
+                assignStudentsToChart(studentsToAssign, tempChart, rows, cols, platformRowIndex, platformWidth, startCol);
+                break;
+                
+              case 'score':
+                balancedScoreSeatingWithPlatform(studentsToAssign, tempChart, rows, cols, platformRowIndex, platformWidth, startCol);
+                break;
+                
+              case 'gender':
+                genderInterleaveSeatingWithPlatform(studentsToAssign, tempChart, rows, cols, platformRowIndex, platformWidth, startCol);
+                break;
+                
+              case 'multiFactor':
+                const weights = {
+                  heightWeight: parseInt(document.getElementById('weightHeight').value) / 100,
+                  visionWeight: parseInt(document.getElementById('weightVision').value) / 100,
+                  scoreWeight: parseInt(document.getElementById('weightScore').value) / 100,
+                  genderWeight: parseInt(document.getElementById('weightGender').value) / 100
+                };
+                multiFactorSeatingWithPlatform(studentsToAssign, tempChart, rows, cols, weights, platformRowIndex, platformWidth, startCol);
+                break;
+            }
+            
+            // 设置最终座位表
+            seatingChart = tempChart;
+            
+            // 添加到历史记录
+            historyManager.push(seatingChart);
+            
+            // 更新座位表显示
+            renderSeatingChart();
+            
+            // 检查约束冲突
+            const violations = checkConstraintViolations();
+            if (violations.length > 0) {
+              showToast(`生成完成，发现 ${violations.length} 个约束冲突`, 'warning');
+            } else {
+              showToast('座位表生成成功', 'success');
+            }
+            
+            hideLoading();
+          } catch (error) {
+            console.error('生成座位表异步错误:', error);
+            hideLoading();
+            showToast('生成座位表失败，请重试', 'error');
+          }
+        }, 500);
+      } catch (error) {
+        console.error('生成座位表错误:', error);
         hideLoading();
-      }, 500);
+        showToast('生成座位表失败，请重试', 'error');
+      }
     }
 
     // 辅助函数：将学生分配到包含讲台的座位表
@@ -1914,8 +1926,8 @@
       const midCol = Math.floor(cols / 2);
       
       const zones = [
-        { name: '左下', rows: [midRow, rows], cols: [0, midCol], students: midLowStudents },
-        { name: '右下', rows: [midRow, rows], cols: [midCol, cols], students: lowStudents.slice(lowStudentIndex) },
+        { name: '左下', rows: [midRow, rows - 1], cols: [0, midCol], students: midLowStudents },
+        { name: '右下', rows: [midRow, rows - 1], cols: [midCol, cols], students: lowStudents.slice(lowStudentIndex) },
         { name: '左上', rows: [0, midRow], cols: [0, midCol], students: topStudents },
         { name: '右上', rows: [0, midRow], cols: [midCol, cols], students: midHighStudents }
       ];
